@@ -1,180 +1,118 @@
-#define _BSTREE_C_
-#include <stdio.h>
 #include <stdlib.h>
 #include "bstree.h"
-#define TRUE 1
-#define FALSE 0
 
-typedef struct _treeNode_ {
-    struct _treeNode_ *l, *r;
-    void *data;
-} TNode;
-
-void PreOrdem(TNode *t, void (*visit)(void *)){
-    if (t != NULL){
-        visit(t->data);
-        PreOrdem(t->l, visit);
-        PreOrdem(t->r, visit);
-    }
-}
-
-
-void Simetrica(TNode *t, void (*visit)(void *)){
-    if (t != NULL){
-        Simetrica(t->l, visit);
-        visit(t->data);
-        Simetrica(t->r, visit);
-    }
-}
-
-
-void PosOrdem(TNode *t, void (*visit)(void *)){
-    if (t != NULL){
-        PosOrdem(t->l, visit);
-        visit(t->data);
-        PosOrdem(t->r, visit);
-    }
-}
-
-TNode* abpCreate(TNode *t){
-    TNode* raiz = (TNode*) malloc(sizeof(TNode));
-    if(t != NULL){
-        t = NULL;
-    }
-    return raiz;
-}
-
-TNode* abpInsert(TNode* t, void*data, int (*cmp)(void*,void*)){
-    int stat;
-    TNode *newt;
-    if(t!= NULL){
-        stat = cmp(data, t->data);
-        if(stat < 0){
-            t->l = abpInsert(t->l,data, cmp);
+TNode *treeInsert(TNode *t, void *key, int (*cmp)(void *, void *)){
+    TNode *newnode;
+    if (t == NULL){
+        newnode = (TNode *)malloc(sizeof(TNode));
+        if(newnode != NULL){
+            newnode->item = key;
+            newnode->left = newnode->right = NULL;
+            return newnode;
         }else{
-            t->r = abpInsert(t->r,data, cmp);
+            return NULL;
+        }
+    }else{
+        if(cmp(key, t->item) < 0){
+            t->left = treeInsert(t->left, key, cmp);
+        }
+        if(cmp(key, t->item) > 0){
+            t->right = treeInsert(t->right, key, cmp);
         }
         return t;
-    }else{
-        newt=(TNode*)malloc(sizeof(TNode));
-        if (newt != NULL){
-            newt->data = data;
-            newt->l = NULL;
-            newt->r = NULL;
-            return newt;
-        }
     }
-    return NULL;
 }
 
+void *treeQuery(TNode *t, void *key, int(*cmp)(void*, void*)){
+    if (t == NULL){
+        return NULL;
+    }
+    if(cmp(key,t->item) == 0){
+        return t->item;
+    }
+    if(cmp(key,t->item) < 0){
+        return treeQuery(t->left, key, cmp);
+    }else{
+        return treeQuery(t->right, key, cmp);
+    }
+}
 
-TNode* removeMaiorArvore(TNode* t, void** data){
-    if(t!= NULL){
-        if(t->r != NULL){
-            t->r = removeMaiorArvore(t->r, data);
+void simetrico(TNode *t, void (*visit)(void *)){
+    if (t != NULL){
+        simetrico(t->left, visit);
+        visit(t->item);
+        simetrico(t->right, visit);
+    }
+}
+
+TNode *treeRemove(TNode *t, void *key, int (*cmp)(void *, void *), void **data){
+    TNode *aux;
+    void *data2;
+
+    if(t != NULL){
+        if (cmp(key, t->item) < 0){
+            t->left = treeRemove(t->left, key, cmp, &data2);
+            *data=data2;
             return t;
         }else{
-            *data = t->data;
-            return t->l;
-        }
-    }
-    return NULL;
-}
-
-
-TNode* abpRemove(TNode *t, void* key, void** data, int(*cmp)(void*, void*)){
-    TNode* curt;
-    void* dataMaiorSubArvoreEsq;
-    int stat;
-    if(t != NULL){
-
-        stat = cmp(key, t->data);
-        if(stat < 0){
-            t->l = abpRemove(t->l, key, data, cmp);
-            return t;
-        }else if(stat > 0){
-            t->r = abpRemove(t->r, key, data, cmp);
-            return t;
-        }else if(stat == 0){
-            *data = t->data;
-            if(t->l == NULL && t->r == NULL){
-                free(t);
-                return NULL;
-            }else if(t->l == NULL && t->r != NULL){
-                curt = t->r;
-                free(t);
-                return curt;
-            }else if(t->l != NULL && t->r == NULL){
-                curt = t->l;
-                free(t);
-                return curt;
-            }else{
-                t->l = removeMaiorArvore(t->l, &dataMaiorSubArvoreEsq);
-                t->data = dataMaiorSubArvoreEsq;
+            if(cmp(key, t->item) > 0){
+                t->right = treeRemove(t->right, key, cmp, &data2);
+                *data=data2;
                 return t;
+            }else{
+                printf("achou\n");
+                if(t->left == NULL && t->right == NULL){
+                    *data = t->item;
+                    free(t);
+                    return NULL;
+                }else{
+                    if(t->left == NULL){
+                        *data = t->item;
+                        aux = t->right;
+                        free(t);
+                        return aux;
+                    }else{
+                        if(t->right == NULL){
+                            *data = t->item;
+                            aux = t->left;
+                            free(t);
+                            return aux;
+                        }else{
+                            *data = t->item;
+                            t->right = abpRemoveMenor(t->right, &data2);
+                            t->item = data2;
+                            return t;
+                        }
+                    }
+                }
             }
         }
     }
+    *data=NULL;
     return NULL;
 }
 
-void* abpQuery(TNode *t, void *key, int(*cmp)(void*, void*)){
-    int stat;
-    if(t != NULL){
-        stat = cmp(key, t->data);
-        if(stat == 0){
-            return t->data;
-        }else if(stat < 0){
-            return abpQuery(t->l, key, cmp);
+void *abpRemoveMenor(TNode *t, void **data){
+    TNode *aux;
+    void *data2;
+    if(t!=NULL){
+        if(t->left != NULL){
+            t->left = abpRemoveMenor(t->left, &data2);
+            *data=data2;
+            return t;
         }else{
-            return abpQuery(t->r, key, cmp);
+            if(t->right!=NULL){
+                *data = t->item;
+                aux = t->right;
+                free(t);
+                return aux;
+            }else{
+                *data = t->item;
+                free(t);
+                return NULL;
+            }
         }
     }
+    *data=NULL;
     return NULL;
-}
-
-
-int abpAltura(TNode* t){
-    int h, hl, hr;
-    if(t != NULL){
-        hl = abpAltura(t->l);
-        hr = abpAltura(t->r);
-        if(hl > hr){
-            h = 1 + hl;
-        }else{
-            h = 1 + hr;
-        }
-        return h;
-    }
-    return 0;
-}
-
-int abpCountNodes(TNode *t){
-    int nl, nr;
-    if(t != NULL){
-        nl = abpCountNodes(t->l);
-        nr = abpCountNodes(t->r);
-        return 1 + nl + nr;
-    }
-    return 0;
-}
-
-int abpCountLeafNodes(TNode *t){
-    int nl, nr, leaf = 0;
-    if(t != NULL){
-        nl = abpCountLeafNodes(t->l);
-        nr = abpCountLeafNodes(t->r);
-        if(t->l == NULL && t->r == NULL){
-            leaf = 1;
-        }
-        return nl + nr + leaf;
-    }
-    return 0;
-}
-
-int abpIsEmpty(TNode *t){
-    if(t == NULL){
-        return TRUE;
-    }
-    return FALSE;
 }
